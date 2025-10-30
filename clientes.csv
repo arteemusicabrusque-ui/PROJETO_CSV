@@ -1,2 +1,3 @@
-Cliente_ID;Nome;Contato;Endereco;Cidade;Estado
-C001;Jo„o Almeida;(11)99999-9999;Av. Paulista 1000;S„o Paulo;SP
+Nome,Telefone,Email,Endereco,Observacoes
+Jo√£o Silva,11999999999,joao@email.com,Rua A,Cliente VIP
+Maria Souza,11988888888,maria@email.com,Rua B,Prefere contato por WhatsApp
