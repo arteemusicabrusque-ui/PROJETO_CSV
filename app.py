@@ -19,12 +19,14 @@ modo_completo = st.toggle("🔀 Modo Completo", value=True, help="Ative para exi
 # 📁 Funções auxiliares
 # ------------------------------------------------------------
 def carregar_csv(nome_arquivo):
+    import io
     if not os.path.exists(nome_arquivo):
         pd.DataFrame().to_csv(nome_arquivo, index=False)
-    return pd.read_csv(nome_arquivo)
-
-def salvar_csv(df, nome_arquivo):
-    df.to_csv(nome_arquivo, index=False)
+    try:
+        return pd.read_csv(nome_arquivo, encoding="utf-8")
+    except UnicodeDecodeError:
+        # Caso o arquivo tenha sido salvo em ANSI ou Latin1
+        return pd.read_csv(nome_arquivo, encoding="latin1")
 
 # ------------------------------------------------------------
 # 🔍 Carregando bases
@@ -161,3 +163,4 @@ if not projetos_df.empty:
     st.dataframe(projetos_df[["Projeto_ID","Ambiente","Caixa","Classificacao","Data"]])
 else:
     st.info("Nenhum projeto salvo ainda.")
+
