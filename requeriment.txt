@@ -1,0 +1,32 @@
+# ===========================================
+# AcousticCalc Web – PROJETO_CSV / PROJETO_SQLITE
+# Dependências completas para execução local e no Streamlit Cloud
+# ===========================================
+
+# --- Núcleo principal do app ---
+streamlit>=1.40
+pandas>=2.2
+numpy>=1.26
+
+# --- Geração de relatórios ---
+fpdf2>=2.8
+reportlab>=4.2
+
+# --- Visualização e gráficos ---
+matplotlib>=3.9
+plotly>=5.23
+seaborn>=0.13
+
+# --- Simulações e cálculos acústicos (fase avançada) ---
+scipy>=1.13
+sympy>=1.13
+soundfile>=0.12
+librosa>=0.10
+
+# --- Banco de dados local (SQLite) ---
+sqlalchemy>=2.0
+sqlite-utils>=3.35
+
+# --- Arquivos e compatibilidade ---
+python-dotenv>=1.0
+requests>=2.32
