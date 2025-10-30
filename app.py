@@ -15,25 +15,24 @@ st.caption("Dimensionamento Sonoro e Análise Acústica Inteligente")
 # Toggle Interface
 modo_completo = st.toggle("🔀 Modo Completo", value=True, help="Ative para exibir todos os parâmetros técnicos")
 
-# ------------------------------------------------------------
-# 📁 Funções auxiliares
-# ------------------------------------------------------------
+# -----------------------------
+# Funções para carregar e salvar CSV
+# -----------------------------
 def carregar_csv(nome_arquivo):
-    import io
+    """Carrega CSV com fallback UTF-8 / Latin1 e normaliza colunas"""
     if not os.path.exists(nome_arquivo):
-        pd.DataFrame().to_csv(nome_arquivo, index=False)
+        pd.DataFrame().to_csv(nome_arquivo, index=False, encoding="utf-8")
     try:
-        return pd.read_csv(nome_arquivo, encoding="utf-8")
+        df = pd.read_csv(nome_arquivo, encoding="utf-8")
     except UnicodeDecodeError:
-        # Caso o arquivo tenha sido salvo em ANSI ou Latin1
-        return pd.read_csv(nome_arquivo, encoding="latin1")
-
+        df = pd.read_csv(nome_arquivo, encoding="latin1")
+    
     # Normaliza os nomes das colunas
     df.columns = df.columns.str.strip()           # remove espaços extras
     df.columns = df.columns.str.replace(" ", "_") # substitui espaços por underline
     df.columns = df.columns.str.title()           # primeira letra maiúscula
     return df
-    
+
 # ------------------------------------------------------------
 # 🔍 Carregando bases
 # ------------------------------------------------------------
@@ -169,5 +168,3 @@ if not projetos_df.empty:
     st.dataframe(projetos_df[["Projeto_ID","Ambiente","Caixa","Classificacao","Data"]])
 else:
     st.info("Nenhum projeto salvo ainda.")
-
-
