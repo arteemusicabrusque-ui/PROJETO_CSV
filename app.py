@@ -1,170 +1,122 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from datetime import datetime
-import math
 import os
 
-# ------------------------------------------------------------
-# 🧩 Configurações iniciais
-# ------------------------------------------------------------
-st.set_page_config(page_title="AcousticCalc Web", page_icon="🎧", layout="wide")
-st.title("🎧 AcousticCalc Web")
-st.caption("Dimensionamento Sonoro e Análise Acústica Inteligente")
-
-# Toggle Interface
-modo_completo = st.toggle("🔀 Modo Completo", value=True, help="Ative para exibir todos os parâmetros técnicos")
-
 # -----------------------------
-# Funções para carregar e salvar CSV
+# Funções utilitárias
 # -----------------------------
 def carregar_csv(nome_arquivo):
-    """Carrega CSV com fallback UTF-8 / Latin1 e normaliza colunas"""
+    """Carrega CSV com detecção de codificação, separador e normalização"""
     if not os.path.exists(nome_arquivo):
         pd.DataFrame().to_csv(nome_arquivo, index=False, encoding="utf-8")
+
     try:
-        df = pd.read_csv(nome_arquivo, encoding="utf-8")
+        # tenta UTF-8 com vírgula
+        df = pd.read_csv(nome_arquivo, encoding="utf-8", sep=",")
     except UnicodeDecodeError:
-        df = pd.read_csv(nome_arquivo, encoding="latin1")
-    
-    # Normaliza os nomes das colunas
-    df.columns = df.columns.str.strip()           # remove espaços extras
-    df.columns = df.columns.str.replace(" ", "_") # substitui espaços por underline
-    df.columns = df.columns.str.title()           # primeira letra maiúscula
+        # tenta Latin1
+        try:
+            df = pd.read_csv(nome_arquivo, encoding="latin1", sep=",")
+        except Exception:
+            # tenta Latin1 com ponto e vírgula
+            df = pd.read_csv(nome_arquivo, encoding="latin1", sep=";")
+    except pd.errors.ParserError:
+        # tenta UTF-8 com ponto e vírgula
+        df = pd.read_csv(nome_arquivo, encoding="utf-8", sep=";")
+
+    # Normaliza nomes das colunas
+    df.columns = df.columns.astype(str)
+    df.columns = df.columns.str.strip().str.replace(" ", "_").str.lower()
     return df
 
-# ------------------------------------------------------------
-# 🔍 Carregando bases
-# ------------------------------------------------------------
+
+def salvar_csv(df, nome_arquivo):
+    """Salva CSV em UTF-8"""
+    df.to_csv(nome_arquivo, index=False, encoding="utf-8")
+
+
+def encontrar_coluna(df, termos):
+    """Tenta encontrar uma coluna cujo nome contenha um dos termos"""
+    for termo in termos:
+        matches = [c for c in df.columns if termo in c.lower()]
+        if matches:
+            return matches[0]
+    return None
+
+
+# -----------------------------
+# Carregar bases
+# -----------------------------
 ambientes_df = carregar_csv("base_ambientes.csv")
 caixas_df = carregar_csv("base_caixas.csv")
 clientes_df = carregar_csv("clientes.csv")
 projetos_df = carregar_csv("projetos.csv")
 
-# ------------------------------------------------------------
-# 🧮 Seção principal – cálculo
-# ------------------------------------------------------------
-st.header("📊 Novo Projeto")
+# -----------------------------
+# Detectar colunas de interesse
+# -----------------------------
+col_cliente = encontrar_coluna(clientes_df, ["nome", "cliente"])
+col_ambiente = encontrar_coluna(ambientes_df, ["nome", "ambiente"])
+col_caixa = encontrar_coluna(caixas_df, ["nome", "modelo", "caixa"])
 
-# Cliente
-st.subheader("Cliente")
-clientes = clientes_df["Nome"].tolist()
-cliente_sel = st.selectbox("Selecione o cliente", clientes)
-if st.button("➕ Novo Cliente"):
-    with st.form("novo_cliente"):
-        nome = st.text_input("Nome do Cliente")
-        contato = st.text_input("Contato (telefone/email)")
-        endereco = st.text_input("Endereço")
-        cidade = st.text_input("Cidade")
-        estado = st.text_input("Estado")
-        enviar = st.form_submit_button("Salvar")
-        if enviar:
-            novo_id = f"C{len(clientes_df)+1:03d}"
-            clientes_df.loc[len(clientes_df)] = [novo_id,nome,contato,endereco,cidade,estado]
-            salvar_csv(clientes_df,"clientes.csv")
-            st.success("Cliente salvo!")
+# -----------------------------
+# Criar listas seguras
+# -----------------------------
+clientes = clientes_df[col_cliente].tolist() if col_cliente else []
+ambientes = ambientes_df[col_ambiente].tolist() if col_ambiente else []
+caixas = caixas_df[col_caixa].tolist() if col_caixa else []
 
-# Ambiente
-st.subheader("Ambiente")
-ambiente_sel = st.selectbox("Selecione o tipo de ambiente", ambientes_df["Nome"])
-if st.button("➕ Novo Ambiente"):
-    with st.form("novo_ambiente"):
-        nome = st.text_input("Nome do Ambiente")
-        spl = st.number_input("SPL alvo (dB)",60,110,85)
-        rt60 = st.number_input("RT60 alvo (s)",0.2,3.0,1.0,step=0.1)
-        abs_m = st.number_input("Coeficiente médio de absorção",0.1,1.0,0.3,step=0.05)
-        cob = st.number_input("Cobertura padrão (m²)",10,200,40)
-        enviar = st.form_submit_button("Salvar")
-        if enviar:
-            ambientes_df.loc[len(ambientes_df)] = [nome,spl,rt60,abs_m,cob]
-            salvar_csv(ambientes_df,"base_ambientes.csv")
-            st.success("Ambiente adicionado!")
+# -----------------------------
+# Interface Streamlit
+# -----------------------------
+st.set_page_config(page_title="AcousticCalc Web", layout="wide")
+st.title("🎵 AcousticCalc Web - Sistema de Sonorização")
 
-# Caixa
-st.subheader("Equipamento")
-caixa_sel = st.selectbox("Selecione o modelo de caixa", caixas_df["Modelo"])
-if st.button("➕ Nova Caixa"):
-    with st.form("nova_caixa"):
-        marca = st.text_input("Marca")
-        modelo = st.text_input("Modelo")
-        tipo = st.text_input("Tipo (ativa/passiva, tamanho)")
-        sens = st.number_input("Sensibilidade (dB/W/m)",80,110,95)
-        pot = st.number_input("Potência RMS (W)",50,5000,300)
-        cob = st.number_input("Cobertura (m²)",5,200,35)
-        enviar = st.form_submit_button("Salvar")
-        if enviar:
-            caixas_df.loc[len(caixas_df)] = [marca,modelo,tipo,sens,pot,cob]
-            salvar_csv(caixas_df,"base_caixas.csv")
-            st.success("Caixa adicionada!")
+interface_toggle = st.checkbox("Interface Resumida (toggle)")
 
-# Parâmetros geométricos
-st.subheader("Dimensões do ambiente")
-col1, col2, col3 = st.columns(3)
-compr = col1.number_input("Comprimento (m)",5.0,100.0,20.0)
-larg = col2.number_input("Largura (m)",5.0,100.0,10.0)
-alt = col3.number_input("Pé-direito (m)",2.0,10.0,3.0)
-
-area = compr * larg
-volume = area * alt
-
-# Dados selecionados
-amb_data = ambientes_df.loc[ambientes_df["Nome"]==ambiente_sel].iloc[0]
-cx_data = caixas_df.loc[caixas_df["Modelo"]==caixa_sel].iloc[0]
-
-# Cálculo SPL e potência
-spl_desejado = amb_data["SPL_alvo"]
-dist_media = compr/2
-perda = 20*np.log10(dist_media)
-spl_ajust = cx_data["Sensibilidade"] + 10*np.log10(cx_data["Potencia_RMS"]) - perda
-dif_db = max(spl_desejado - spl_ajust, 0)
-pot_necessaria = cx_data["Potencia_RMS"] * (2**(dif_db/3))
-num_caixas = math.ceil(area / cx_data["Cobertura_m2"])
-pot_total = pot_necessaria * num_caixas
-
-# RT60
-alpha = amb_data["Absorcao_media"]
-rt60 = 0.161 * (volume / (area * alpha))
-if rt60 > 1.5: classe = "🟨 Reverberação Alta"
-elif rt60 < 0.4: classe = "🟦 Ambiente Seco"
-else: classe = "🟩 Acústica Adequada"
-
-# ------------------------------------------------------------
-# 🧾 Resultados
-# ------------------------------------------------------------
-st.markdown("---")
-st.header("📈 Resultados")
-
-if modo_completo:
-    st.metric("Área (m²)", f"{area:.1f}")
-    st.metric("Volume (m³)", f"{volume:.1f}")
-    st.metric("Perda sonora (dB)", f"{perda:.1f}")
-
-col1, col2 = st.columns(2)
-col1.metric("SPL ajustado", f"{spl_ajust:.1f} dB")
-col1.metric("Caixas necessárias", int(num_caixas))
-col2.metric("Potência total", f"{pot_total:.0f} W")
-col2.metric("RT60", f"{rt60:.2f} s")
-
-st.success(f"Classificação: {classe}")
-
-# ------------------------------------------------------------
-# 💾 Salvamento do projeto
-# ------------------------------------------------------------
-if st.button("💾 Salvar Projeto"):
-    cliente_id = clientes_df.loc[clientes_df["Nome"]==cliente_sel, "Cliente_ID"].values[0]
-    proj_id = f"P{len(projetos_df)+1:03d}"
-    novos_dados = [proj_id,cliente_id,ambiente_sel,cx_data["Modelo"],spl_desejado,spl_ajust,
-                   pot_total,rt60,classe,datetime.now().strftime("%Y-%m-%d")]
-    projetos_df.loc[len(projetos_df)] = novos_dados
-    salvar_csv(projetos_df,"projetos.csv")
-    st.success("Projeto salvo com sucesso!")
-
-# ------------------------------------------------------------
-# 📂 Projetos existentes
-# ------------------------------------------------------------
-st.markdown("---")
-st.header("📁 Projetos Salvos")
-if not projetos_df.empty:
-    st.dataframe(projetos_df[["Projeto_ID","Ambiente","Caixa","Classificacao","Data"]])
+if interface_toggle:
+    st.info("🟢 Interface resumida ativada")
 else:
-    st.info("Nenhum projeto salvo ainda.")
+    st.info("🔵 Interface completa ativada")
+
+# -----------------------------
+# Avisos se faltar alguma coluna
+# -----------------------------
+if not col_cliente:
+    st.warning("⚠️ Nenhuma coluna de nome/cliente encontrada em clientes.csv")
+if not col_ambiente:
+    st.warning("⚠️ Nenhuma coluna de nome/ambiente encontrada em base_ambientes.csv")
+if not col_caixa:
+    st.warning("⚠️ Nenhuma coluna de nome/modelo/caixa encontrada em base_caixas.csv")
+
+# -----------------------------
+# Formulário principal
+# -----------------------------
+with st.form("form_projeto"):
+    cliente_sel = st.selectbox("Selecione o cliente", clientes)
+    ambiente_sel = st.selectbox("Selecione o ambiente", ambientes)
+    caixa_sel = st.selectbox("Selecione o equipamento", caixas)
+    submit = st.form_submit_button("Salvar projeto")
+
+if submit:
+    novo = pd.DataFrame([{
+        "Cliente": cliente_sel,
+        "Ambiente": ambiente_sel,
+        "Caixa": caixa_sel
+    }])
+    projetos_df = pd.concat([projetos_df, novo], ignore_index=True)
+    salvar_csv(projetos_df, "projetos.csv")
+    st.success("✅ Projeto salvo com sucesso!")
+
+# -----------------------------
+# Exibir tabelas carregadas
+# -----------------------------
+st.subheader("📊 Bases carregadas")
+with st.expander("Clientes"):
+    st.dataframe(clientes_df)
+with st.expander("Ambientes"):
+    st.dataframe(ambientes_df)
+with st.expander("Caixas"):
+    st.dataframe(caixas_df)
+with st.expander("Projetos"):
+    st.dataframe(projetos_df)
