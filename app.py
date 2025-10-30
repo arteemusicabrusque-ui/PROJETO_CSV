@@ -28,6 +28,12 @@ def carregar_csv(nome_arquivo):
         # Caso o arquivo tenha sido salvo em ANSI ou Latin1
         return pd.read_csv(nome_arquivo, encoding="latin1")
 
+    # Normaliza os nomes das colunas
+    df.columns = df.columns.str.strip()           # remove espaços extras
+    df.columns = df.columns.str.replace(" ", "_") # substitui espaços por underline
+    df.columns = df.columns.str.title()           # primeira letra maiúscula
+    return df
+    
 # ------------------------------------------------------------
 # 🔍 Carregando bases
 # ------------------------------------------------------------
@@ -163,4 +169,5 @@ if not projetos_df.empty:
     st.dataframe(projetos_df[["Projeto_ID","Ambiente","Caixa","Classificacao","Data"]])
 else:
     st.info("Nenhum projeto salvo ainda.")
+
 
