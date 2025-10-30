@@ -1,0 +1,6 @@
+Nome;SPL_alvo;RT60_alvo;Absorcao_media;Cobertura_padrao
+Restaurante;80;0.8;0.30;35
+Academia;90;1.0;0.35;50
+Igreja;90;1.2;0.35;50
+Auditório;95;1.5;0.40;60
+Home Theater;85;0.5;0.45;25
