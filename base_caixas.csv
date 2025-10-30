@@ -1,4 +1,3 @@
-Marca;Modelo;Tipo;Sensibilidade;Potencia_RMS;Cobertura_m2
-JBL;EON710;"Ativa 10""";95;300;35
-RCF;ART 712-A;"Ativa 12""";98;700;40
-Yamaha;DBR10;"Ativa 10""";94;325;30
+Nome,Tipo,Sensibilidade_dB,Potencia_W,SPL_Max_dB,Freq_Resposta,Impedancia_Ohms
+JBL Control 25,Full Range,89,150,110,80Hz–18kHz,8
+Yamaha DSR115,Full Range,96,1000,134,55Hz–20kHz,8
