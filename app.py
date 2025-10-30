@@ -9,7 +9,7 @@ from fpdf import FPDF
 # ======================================================
 
 st.set_page_config(
-    page_title="AcousticCalc Web – PROJETO_CSV",
+    page_title="AcousticCalc Web – Sistema de Cálculo e Dimensionamento de Som",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -87,7 +87,7 @@ projetos_df = carregar_csv("projetos.csv")
 # INTERFACE
 # ======================================================
 
-st.title("🎶 AcousticCalc Web – Sistema de Cálculo e Dimensionamento")
+st.title("🎶 AcousticCalc Web – Sistema de Cálculo e Dimensionamento de Som")
 st.write("Versão prática e comercial – Tema escuro")
 
 modo = st.toggle("💡 Modo completo / resumido", value=True)
@@ -168,13 +168,7 @@ with abas[3]:
 
     cliente = st.selectbox("Cliente", clientes_df["Nome"].unique() if not clientes_df.empty else [])
     ambiente = st.selectbox("Ambiente", ambientes_df["Nome"].unique() if not ambientes_df.empty else [])
-
-    if "Nome" in caixas_df.columns:
-    caixa = st.selectbox("Caixa", caixas_df["Nome"].unique())
-else:
-    st.warning("A coluna 'Nome' não foi encontrada em base_caixas.csv")
-    caixa = None
-
+    caixa = st.selectbox("Caixa", caixas_df["Nome"].unique() if not caixas_df.empty else [])
 
     if ambiente and caixa:
         amb_info = ambientes_df[ambientes_df["Nome"] == ambiente].iloc[0]
@@ -210,4 +204,3 @@ with abas[4]:
     empresa = st.text_input("Nome da empresa", "Arte & Música Sonorização de Ambientes")
     st.file_uploader("Logo da empresa (PNG/JPG)", type=["png", "jpg", "jpeg"])
     st.info("Essas informações serão aplicadas nos relatórios futuros.")
-
